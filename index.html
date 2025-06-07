@@ -207,6 +207,8 @@
             if (window.TelegramGameProxy) {
                 console.log("Sending score to Telegram:", score);
                 try {
+                    // Kirim score sebagai data
+                    window.TelegramGameProxy.shareScore();
                     window.TelegramGameProxy.setGameScore(score);
                 } catch (e) {
                     console.error("Error sending score to Telegram:", e);
@@ -320,6 +322,7 @@
                 sendScoreToTelegram(score);
                 return;
             }
+            
 
             requestAnimationFrame(gameLoop);
         }
