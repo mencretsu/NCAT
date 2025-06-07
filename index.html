@@ -296,13 +296,24 @@
                 retryButton.style.display = 'block';
                 
                 // Send score to Telegram
+                // if (window.TelegramGameProxy) {
+                //     window.TelegramGameProxy.setScore(score);
+                //     if (TelegramGameProxy.callback) {
+                //         TelegramGameProxy.callback(score);
+                //     }
+                // }
+                // return;
                 if (window.TelegramGameProxy) {
                     window.TelegramGameProxy.setScore(score);
-                    if (TelegramGameProxy.callback) {
-                        TelegramGameProxy.callback(score);
+                    // Tambahkan callback untuk memastikan score terkirim
+                    if (window.TelegramGameProxy.shareScore) {
+                        window.TelegramGameProxy.shareScore();
                     }
                 }
                 return;
+
+
+                
             }
 
             requestAnimationFrame(gameLoop);
