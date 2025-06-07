@@ -13,7 +13,8 @@
             align-items: center;
             min-height: 100vh;
             background: #000;
-            touch-action: none; /* Prevents double-tap zoom on mobile */
+            touch-action: none;
+            font-family: Arial, sans-serif;
         }
         canvas {
             max-width: 100%;
@@ -26,18 +27,62 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-family: Arial, sans-serif;
             display: block;
+        }
+        #retryButton {
+            position: fixed;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 20px;
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            display: none;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
+        }
+        #retryButton:hover {
+            background: #ff1493;
+        }
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .rainbow-text {
+            background: linear-gradient(to right, 
+                #ff0000, #ff7f00, #ffff00, #00ff00, 
+                #0000ff, #4b0082, #8f00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow 5s linear infinite;
+        }
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
     </style>
 </head>
 <body>
     <div id="loading">Loading...</div>
     <canvas id="gameCanvas"></canvas>
+    <button id="retryButton">🔄 Play Again!</button>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const loadingText = document.getElementById('loading');
+        const retryButton = document.getElementById('retryButton');
         
         // Set game dimensions
         canvas.width = 400;
@@ -47,6 +92,7 @@
         let score = 0;
         let gameOver = false;
         let gameStarted = false;
+        let highScore = 0;
         
         // Nyan Cat
         const cat = {
@@ -74,6 +120,24 @@
         const PIPE_SPEED = 3;
         const PIPE_GAP = 200;
 
+        // Reset game function
+        function resetGame() {
+            score = 0;
+            gameOver = false;
+            gameStarted = true;
+            pipes = [];
+            cat.y = canvas.height / 2;
+            cat.velocity = 0;
+            retryButton.style.display = 'none';
+            gameLoop();
+        }
+
+        // Handle retry button click
+        retryButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            resetGame();
+        });
+
         // Handle input
         function handleInput(e) {
             e.preventDefault();
@@ -87,8 +151,16 @@
             }
         }
 
-        document.addEventListener('click', handleInput);
-        document.addEventListener('touchstart', handleInput);
+        document.addEventListener('click', function(e) {
+            if (e.target !== retryButton) {
+                handleInput(e);
+            }
+        });
+        document.addEventListener('touchstart', function(e) {
+            if (e.target !== retryButton) {
+                handleInput(e);
+            }
+        });
         document.addEventListener('keydown', function(e) {
             if (e.code === 'Space') {
                 handleInput(e);
@@ -112,7 +184,15 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.font = '30px Arial';
-            ctx.fillText('Tap to Start', canvas.width/2 - 70, canvas.height/2);
+            const text = 'Tap to Start';
+            ctx.fillText(text, canvas.width/2 - ctx.measureText(text).width/2, canvas.height/2);
+            
+            // Draw high score if exists
+            if (highScore > 0) {
+                ctx.font = '20px Arial';
+                const highScoreText = `High Score: ${highScore}`;
+                ctx.fillText(highScoreText, canvas.width/2 - ctx.measureText(highScoreText).width/2, canvas.height/2 + 40);
+            }
         }
 
         // Game loop
@@ -177,17 +257,50 @@
             ctx.fillText(`Score: ${score}`, 10, 30);
 
             if (gameOver) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                // Update high score
+                if (score > highScore) {
+                    highScore = score;
+                }
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'white';
+                
+                // Game Over text with rainbow effect
                 ctx.font = '48px Arial';
-                ctx.fillText('Game Over!', canvas.width/2 - 100, canvas.height/2);
+                const gameOverText = 'Game Over!';
+                const gradient = ctx.createLinearGradient(
+                    canvas.width/2 - 100,
+                    canvas.height/2 - 24,
+                    canvas.width/2 + 100,
+                    canvas.height/2 - 24
+                );
+                gradient.addColorStop(0, '#ff0000');
+                gradient.addColorStop(0.2, '#ff7f00');
+                gradient.addColorStop(0.4, '#ffff00');
+                gradient.addColorStop(0.6, '#00ff00');
+                gradient.addColorStop(0.8, '#0000ff');
+                gradient.addColorStop(1, '#8f00ff');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillText(gameOverText, canvas.width/2 - ctx.measureText(gameOverText).width/2, canvas.height/2 - 20);
+                
+                // Score text
+                ctx.fillStyle = 'white';
                 ctx.font = '24px Arial';
-                ctx.fillText(`Final Score: ${score}`, canvas.width/2 - 60, canvas.height/2 + 40);
+                const finalScoreText = `Final Score: ${score}`;
+                const highScoreText = `High Score: ${highScore}`;
+                ctx.fillText(finalScoreText, canvas.width/2 - ctx.measureText(finalScoreText).width/2, canvas.height/2 + 20);
+                ctx.fillText(highScoreText, canvas.width/2 - ctx.measureText(highScoreText).width/2, canvas.height/2 + 50);
+                
+                // Show retry button
+                retryButton.style.display = 'block';
                 
                 // Send score to Telegram
                 if (window.TelegramGameProxy) {
                     window.TelegramGameProxy.setScore(score);
+                    if (TelegramGameProxy.callback) {
+                        TelegramGameProxy.callback(score);
+                    }
                 }
                 return;
             }
