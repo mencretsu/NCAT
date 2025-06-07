@@ -316,8 +316,10 @@
                 retryButton.style.display = 'block';
                 
                 // Send score to Telegram
-                sendScoreToTelegram(score);
-                return;
+                // sendScoreToTelegram(score);
+                // return;
+                window.TelegramGameProxy.setGameScore(score);
+
             }
             
 
