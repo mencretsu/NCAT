@@ -202,21 +202,18 @@
             }
         }
 
-        // Send score to Telegram
         function sendScoreToTelegram(score) {
             if (window.TelegramGameProxy) {
-                console.log("Sending score to Telegram:", score);
                 try {
-                    // Kirim score sebagai data
-                    window.TelegramGameProxy.shareScore();
                     window.TelegramGameProxy.setGameScore(score);
                 } catch (e) {
-                    console.error("Error sending score to Telegram:", e);
+                    console.error("Gagal kirim skor ke Telegram:", e);
                 }
             } else {
-                console.warn("TelegramGameProxy not available");
+                console.warn("TelegramGameProxy nggak tersedia");
             }
         }
+
 
         // Game loop
         function gameLoop() {
