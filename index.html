@@ -13,18 +13,31 @@
             align-items: center;
             min-height: 100vh;
             background: #000;
+            touch-action: none; /* Prevents double-tap zoom on mobile */
         }
         canvas {
             max-width: 100%;
             max-height: 100vh;
+            touch-action: none;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: block;
         }
     </style>
 </head>
 <body>
+    <div id="loading">Loading...</div>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const loadingText = document.getElementById('loading');
         
         // Set game dimensions
         canvas.width = 400;
@@ -33,6 +46,7 @@
         // Game variables
         let score = 0;
         let gameOver = false;
+        let gameStarted = false;
         
         // Nyan Cat
         const cat = {
@@ -48,11 +62,11 @@
         
         // Load images
         const catImg = new Image();
-        catImg.src = 'nyancat.png';
+        catImg.src = 'assets/nyancat.png';
         const pipeImg = new Image();
-        pipeImg.src = 'pipe.png';
+        pipeImg.src = 'assets/pipe.png';
         const bgImg = new Image();
-        bgImg.src = 'background.png';
+        bgImg.src = 'assets/background.png';
 
         // Game constants
         const GRAVITY = 0.5;
@@ -61,15 +75,23 @@
         const PIPE_GAP = 200;
 
         // Handle input
-        document.addEventListener('click', function() {
+        function handleInput(e) {
+            e.preventDefault();
+            if (!gameStarted) {
+                gameStarted = true;
+                gameLoop();
+                return;
+            }
             if (!gameOver) {
                 cat.velocity = JUMP;
             }
-        });
+        }
 
+        document.addEventListener('click', handleInput);
+        document.addEventListener('touchstart', handleInput);
         document.addEventListener('keydown', function(e) {
-            if (e.code === 'Space' && !gameOver) {
-                cat.velocity = JUMP;
+            if (e.code === 'Space') {
+                handleInput(e);
             }
         });
 
@@ -84,10 +106,25 @@
             });
         }
 
+        // Draw start screen
+        function drawStartScreen() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.fillText('Tap to Start', canvas.width/2 - 70, canvas.height/2);
+        }
+
         // Game loop
         function gameLoop() {
             // Clear canvas
             ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+            if (!gameStarted) {
+                drawStartScreen();
+                requestAnimationFrame(gameLoop);
+                return;
+            }
 
             // Update cat
             cat.velocity += GRAVITY;
@@ -149,7 +186,9 @@
                 ctx.fillText(`Final Score: ${score}`, canvas.width/2 - 60, canvas.height/2 + 40);
                 
                 // Send score to Telegram
-                window.TelegramGameProxy.setScore(score);
+                if (window.TelegramGameProxy) {
+                    window.TelegramGameProxy.setScore(score);
+                }
                 return;
             }
 
@@ -162,7 +201,9 @@
             new Promise(resolve => pipeImg.onload = resolve),
             new Promise(resolve => bgImg.onload = resolve)
         ]).then(() => {
-            gameLoop();
+            loadingText.style.display = 'none';
+            canvas.style.display = 'block';
+            drawStartScreen();
         });
     </script>
 </body>
