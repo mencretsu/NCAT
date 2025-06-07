@@ -197,115 +197,115 @@
 
         // Game loop
         // Game loop
-function gameLoop() {
-    // Clear canvas
-    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-
-    if (!gameStarted) {
-        drawStartScreen();
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-
-    // Update cat
-    cat.velocity += GRAVITY;
-    cat.y += cat.velocity;
-
-    // Draw cat
-    ctx.drawImage(catImg, cat.x, cat.y, cat.width, cat.height);
-
-    // Update and draw pipes
-    for (let i = pipes.length - 1; i >= 0; i--) {
-        const pipe = pipes[i];
-        pipe.x -= PIPE_SPEED;
-
-        // Draw pipes
-        ctx.drawImage(pipeImg, pipe.x, 0, pipe.width, pipe.gapY);
-        ctx.drawImage(pipeImg, pipe.x, pipe.gapY + PIPE_GAP, pipe.width, canvas.height);
-
-        // Check collision
-        if (cat.x + cat.width > pipe.x && 
-            cat.x < pipe.x + pipe.width && 
-            (cat.y < pipe.gapY || cat.y + cat.height > pipe.gapY + PIPE_GAP)) {
-            gameOver = true;
-        }
-
-        // Score points
-        if (!pipe.scored && cat.x > pipe.x + pipe.width) {
-            score++;
-            pipe.scored = true;
-        }
-
-        // Remove off-screen pipes
-        if (pipe.x + pipe.width < 0) {
-            pipes.splice(i, 1);
-        }
-    }
-
-    // Spawn new pipes
-    if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
-        spawnPipe();
-    }
-
-    // Check boundaries
-    if (cat.y + cat.height > canvas.height || cat.y < 0) {
-        gameOver = true;
-    }
-
-    // Draw score
-    ctx.fillStyle = 'white';
-    ctx.font = '24px Arial';
-    ctx.fillText(`Score: ${score}`, 10, 30);
-
-    if (gameOver) {
-        // Update high score
-        if (score > highScore) {
-            highScore = score;
-        }
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function gameLoop() {
+            // Clear canvas
+            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
         
-        // Game Over text with rainbow effect
-        ctx.font = '48px Arial';
-        const gameOverText = 'Game Over!';
-        const gradient = ctx.createLinearGradient(
-            canvas.width/2 - 100,
-            canvas.height/2 - 24,
-            canvas.width/2 + 100,
-            canvas.height/2 - 24
-        );
-        gradient.addColorStop(0, '#ff0000');
-        gradient.addColorStop(0.2, '#ff7f00');
-        gradient.addColorStop(0.4, '#ffff00');
-        gradient.addColorStop(0.6, '#00ff00');
-        gradient.addColorStop(0.8, '#0000ff');
-        gradient.addColorStop(1, '#8f00ff');
+            if (!gameStarted) {
+                drawStartScreen();
+                requestAnimationFrame(gameLoop);
+                return;
+            }
         
-        ctx.fillStyle = gradient;
-        ctx.fillText(gameOverText, canvas.width/2 - ctx.measureText(gameOverText).width/2, canvas.height/2 - 20);
+            // Update cat
+            cat.velocity += GRAVITY;
+            cat.y += cat.velocity;
         
-        // Score text
-        ctx.fillStyle = 'white';
-        ctx.font = '24px Arial';
-        const finalScoreText = `Final Score: ${score}`;
-        const highScoreText = `High Score: ${highScore}`;
-        ctx.fillText(finalScoreText, canvas.width/2 - ctx.measureText(finalScoreText).width/2, canvas.height/2 + 20);
-        ctx.fillText(highScoreText, canvas.width/2 - ctx.measureText(highScoreText).width/2, canvas.height/2 + 50);
+            // Draw cat
+            ctx.drawImage(catImg, cat.x, cat.y, cat.width, cat.height);
         
-        // Show retry button
-        retryButton.style.display = 'block';
+            // Update and draw pipes
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                const pipe = pipes[i];
+                pipe.x -= PIPE_SPEED;
         
-        // Send score to Telegram
-        if (window.TelegramGameProxy) {
-            console.log("Sending score:", score); // Debug log
-            window.TelegramGameProxy.setGameScore(score);
+                // Draw pipes
+                ctx.drawImage(pipeImg, pipe.x, 0, pipe.width, pipe.gapY);
+                ctx.drawImage(pipeImg, pipe.x, pipe.gapY + PIPE_GAP, pipe.width, canvas.height);
+        
+                // Check collision
+                if (cat.x + cat.width > pipe.x && 
+                    cat.x < pipe.x + pipe.width && 
+                    (cat.y < pipe.gapY || cat.y + cat.height > pipe.gapY + PIPE_GAP)) {
+                    gameOver = true;
+                }
+        
+                // Score points
+                if (!pipe.scored && cat.x > pipe.x + pipe.width) {
+                    score++;
+                    pipe.scored = true;
+                }
+        
+                // Remove off-screen pipes
+                if (pipe.x + pipe.width < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+        
+            // Spawn new pipes
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
+                spawnPipe();
+            }
+        
+            // Check boundaries
+            if (cat.y + cat.height > canvas.height || cat.y < 0) {
+                gameOver = true;
+            }
+        
+            // Draw score
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+        
+            if (gameOver) {
+                // Update high score
+                if (score > highScore) {
+                    highScore = score;
+                }
+        
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Game Over text with rainbow effect
+                ctx.font = '48px Arial';
+                const gameOverText = 'Game Over!';
+                const gradient = ctx.createLinearGradient(
+                    canvas.width/2 - 100,
+                    canvas.height/2 - 24,
+                    canvas.width/2 + 100,
+                    canvas.height/2 - 24
+                );
+                gradient.addColorStop(0, '#ff0000');
+                gradient.addColorStop(0.2, '#ff7f00');
+                gradient.addColorStop(0.4, '#ffff00');
+                gradient.addColorStop(0.6, '#00ff00');
+                gradient.addColorStop(0.8, '#0000ff');
+                gradient.addColorStop(1, '#8f00ff');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillText(gameOverText, canvas.width/2 - ctx.measureText(gameOverText).width/2, canvas.height/2 - 20);
+                
+                // Score text
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                const finalScoreText = `Final Score: ${score}`;
+                const highScoreText = `High Score: ${highScore}`;
+                ctx.fillText(finalScoreText, canvas.width/2 - ctx.measureText(finalScoreText).width/2, canvas.height/2 + 20);
+                ctx.fillText(highScoreText, canvas.width/2 - ctx.measureText(highScoreText).width/2, canvas.height/2 + 50);
+                
+                // Show retry button
+                retryButton.style.display = 'block';
+                
+                // Send score to Telegram
+                if (window.TelegramGameProxy) {
+                    console.log("Sending score:", score); // Debug log
+                    window.TelegramGameProxy.setGameScore(score);
+                }
+                return;
+            }
+        
+            requestAnimationFrame(gameLoop);
         }
-        return;
-    }
-
-    requestAnimationFrame(gameLoop);
-}
 
 // Start game when images are loaded
 Promise.all([
