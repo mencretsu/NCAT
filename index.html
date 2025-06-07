@@ -20,6 +20,7 @@
             max-width: 100%;
             max-height: 100vh;
             touch-action: none;
+            display: none; /* Hidden initially */
         }
         #loading {
             position: fixed;
@@ -28,6 +29,7 @@
             transform: translate(-50%, -50%);
             color: white;
             display: block;
+            font-size: 24px;
         }
         #retryButton {
             position: fixed;
@@ -44,6 +46,7 @@
             display: none;
             animation: pulse 1.5s infinite;
             box-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
+            z-index: 1000;
         }
         #retryButton:hover {
             background: #ff1493;
@@ -75,7 +78,7 @@
     </style>
 </head>
 <body>
-    <div id="loading">Loading...</div>
+    <div id="loading">Loading game assets...</div>
     <canvas id="gameCanvas"></canvas>
     <button id="retryButton">🔄 Play Again!</button>
     <script>
@@ -130,6 +133,7 @@
             cat.velocity = 0;
             retryButton.style.display = 'none';
             gameLoop();
+            console.log("Game reset");
         }
 
         // Handle retry button click
@@ -144,6 +148,7 @@
             if (!gameStarted) {
                 gameStarted = true;
                 gameLoop();
+                console.log("Game started");
                 return;
             }
             if (!gameOver) {
@@ -151,16 +156,19 @@
             }
         }
 
+        // Input event listeners
         document.addEventListener('click', function(e) {
             if (e.target !== retryButton) {
                 handleInput(e);
             }
         });
+        
         document.addEventListener('touchstart', function(e) {
             if (e.target !== retryButton) {
                 handleInput(e);
             }
         });
+        
         document.addEventListener('keydown', function(e) {
             if (e.code === 'Space') {
                 handleInput(e);
@@ -187,7 +195,6 @@
             const text = 'Tap to Start';
             ctx.fillText(text, canvas.width/2 - ctx.measureText(text).width/2, canvas.height/2);
             
-            // Draw high score if exists
             if (highScore > 0) {
                 ctx.font = '20px Arial';
                 const highScoreText = `High Score: ${highScore}`;
@@ -195,74 +202,87 @@
             }
         }
 
-        // Game loop
+        // Send score to Telegram
+        function sendScoreToTelegram(score) {
+            if (window.TelegramGameProxy) {
+                console.log("Sending score to Telegram:", score);
+                try {
+                    window.TelegramGameProxy.setGameScore(score);
+                } catch (e) {
+                    console.error("Error sending score to Telegram:", e);
+                }
+            } else {
+                console.warn("TelegramGameProxy not available");
+            }
+        }
+
         // Game loop
         function gameLoop() {
             // Clear canvas
             ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-        
+
             if (!gameStarted) {
                 drawStartScreen();
                 requestAnimationFrame(gameLoop);
                 return;
             }
-        
+
             // Update cat
             cat.velocity += GRAVITY;
             cat.y += cat.velocity;
-        
+
             // Draw cat
             ctx.drawImage(catImg, cat.x, cat.y, cat.width, cat.height);
-        
+
             // Update and draw pipes
             for (let i = pipes.length - 1; i >= 0; i--) {
                 const pipe = pipes[i];
                 pipe.x -= PIPE_SPEED;
-        
+
                 // Draw pipes
                 ctx.drawImage(pipeImg, pipe.x, 0, pipe.width, pipe.gapY);
                 ctx.drawImage(pipeImg, pipe.x, pipe.gapY + PIPE_GAP, pipe.width, canvas.height);
-        
+
                 // Check collision
                 if (cat.x + cat.width > pipe.x && 
                     cat.x < pipe.x + pipe.width && 
                     (cat.y < pipe.gapY || cat.y + cat.height > pipe.gapY + PIPE_GAP)) {
                     gameOver = true;
                 }
-        
+
                 // Score points
                 if (!pipe.scored && cat.x > pipe.x + pipe.width) {
                     score++;
                     pipe.scored = true;
                 }
-        
+
                 // Remove off-screen pipes
                 if (pipe.x + pipe.width < 0) {
                     pipes.splice(i, 1);
                 }
             }
-        
+
             // Spawn new pipes
             if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
                 spawnPipe();
             }
-        
+
             // Check boundaries
             if (cat.y + cat.height > canvas.height || cat.y < 0) {
                 gameOver = true;
             }
-        
+
             // Draw score
             ctx.fillStyle = 'white';
             ctx.font = '24px Arial';
             ctx.fillText(`Score: ${score}`, 10, 30);
-        
+
             if (gameOver) {
                 // Update high score
                 if (score > highScore) {
                     highScore = score;
                 }
-        
+
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
@@ -297,23 +317,35 @@
                 retryButton.style.display = 'block';
                 
                 // Send score to Telegram
-                if (window.TelegramGameProxy) {
-                    console.log("Sending score:", score); // Debug log
-                    window.TelegramGameProxy.setGameScore(score);
-                }
+                sendScoreToTelegram(score);
                 return;
             }
-        
+
             requestAnimationFrame(gameLoop);
         }
 
-// Start game when images are loaded
-Promise.all([
-    new Promise(resolve => catImg.onload = resolve),
-    new Promise(resolve => pipeImg.onload = resolve),
-    new Promise(resolve => bgImg.onload = resolve)
-]).then(() => {
-    loadingText.style.display = 'none';
-    canvas.style.display = 'block';
-    drawStartScreen();
-});
+        // Start game when images are loaded
+        Promise.all([
+            new Promise(resolve => catImg.onload = resolve),
+            new Promise(resolve => pipeImg.onload = resolve),
+            new Promise(resolve => bgImg.onload = resolve)
+        ]).then(() => {
+            console.log("All assets loaded");
+            loadingText.style.display = 'none';
+            canvas.style.display = 'block';
+            drawStartScreen();
+        }).catch(error => {
+            console.error("Error loading assets:", error);
+            loadingText.textContent = "Error loading game assets. Please refresh.";
+        });
+
+        // Debug info
+        console.log("Game initialized");
+        if (window.TelegramGameProxy) {
+            console.log("TelegramGameProxy available");
+        } else {
+            console.log("TelegramGameProxy not available");
+        }
+    </script>
+</body>
+</html>
